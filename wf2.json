@@ -1,0 +1,261 @@
+{
+  "name": "practica",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sandbox.plaid.com/transactions/get",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "d837f465-28c8-4dd6-ade9-6077236545e3",
+      "name": "Plaid Transacciones",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        624,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "path": "webhook-transacciones",
+        "options": {}
+      },
+      "id": "d119c76c-50bb-4e07-bd15-615de7ce6202",
+      "name": "Webhook Transacciones",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        400,
+        112
+      ],
+      "webhookId": "afc6a8f7-69a5-4952-8c61-a8e4522ee523"
+    },
+    {
+      "parameters": {
+        "operation": "insert"
+      },
+      "id": "6ebec1f5-1c30-4cde-8a94-6149726e6ce0",
+      "name": "Supabase Transacciones",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        112
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "O50MusyXcB24KFnB",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "={{ `\nconst { data } = $input.first().json;\nconst transacciones = data.transactions || [];\n\n// Categorizar y analizar transacciones\nconst transaccionesProcesadas = transacciones.map(trans => ({\n  id: trans.transaction_id,\n  usuario_id: trans.account_id,\n  monto: trans.amount,\n  categoria: trans.category ? trans.category[0] : 'Otros',\n  descripcion: trans.name,\n  fecha: trans.date,\n  cuenta: trans.account_id,\n  tipo: trans.amount > 0 ? 'ingreso' : 'gasto',\n  metadata: {\n    ubicacion: trans.location,\n    merchant: trans.merchant_name\n  }\n}));\n\nreturn [{ json: { transaccionesProcesadas } }];\n` }}"
+      },
+      "id": "c4af31fa-8e49-450d-9fe2-f94cadafbb26",
+      "name": "Procesar Transacciones",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        848,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-4",
+        "prompt": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "Eres un asesor financiero personal experto. Analiza las transacciones bancarias del usuario y proporciona insights valiosos, recomendaciones prácticas y alertas proactivas. Sé específico, constructivo y utiliza un tono amigable pero profesional."
+            },
+            {
+              "content": "=={{ `Por favor analiza estas transacciones financieras:\\n\\n${JSON.stringify($input.first().json.transaccionesProcesadas, null, 2)}\\n\\nProporciona un análisis completo que incluya:\\n\\n1. **PATRONES DE GASTO IDENTIFICADOS**\\n   - Categorías con mayor gasto\\n   - Frecuencia de transacciones\\n   - Posibles gastos recurrentes\\n\\n2. **RECOMENDACIONES DE AHORRO**\\n   - Áreas donde se puede reducir gastos\\n   - Sugerencias específicas por categoría\\n   - Opciones de optimización financiera\\n\\n3. **ALERTAS Y OPORTUNIDADES**\\n   - Posibles excesos de gasto\\n   - Oportunidades de ahorro identificadas\\n   - Recomendaciones de presupuesto\\n\\n4. **CONSEJOS PRÁCTICOS**\\n   - Hábitos financieros saludables\\n   - Estrategias para mejorar la salud financiera\\n   - Próximos pasos recomendados\\n\\nPor favor, estructura tu respuesta de manera clara y accionable. Incluye datos específicos de las transacciones analizadas.` }}"
+            }
+          ]
+        },
+        "options": {},
+        "requestOptions": {}
+      },
+      "id": "d54f6590-d216-447c-ad66-2d032439791d",
+      "name": "OpenAI Análisis",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        112
+      ],
+      "alwaysOutputData": false,
+      "credentials": {
+        "openAiApi": {
+          "id": "zWNOwvY2hr3GsLO3",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert"
+      },
+      "id": "daf5455f-0b8d-4345-b69b-41643cd09409",
+      "name": "Supabase Análisis",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1456,
+        112
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "O50MusyXcB24KFnB",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "9d2a5272-9aeb-495b-9824-cec0c5014751",
+      "name": "Cron Diario",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        400,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "query"
+      },
+      "id": "273aa2c5-e45d-4175-8271-440b2c1af0d4",
+      "name": "Supabase Presupuestos",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        624,
+        320
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "O50MusyXcB24KFnB",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "={{ `\nconst presupuestos = $input.first().json || [];\nconst hoy = new Date().toISOString().split('T')[0];\n\n// Aquí iría la lógica real de comparación con transacciones\nconst alertas = presupuestos.map(presupuesto => ({\n  tipo: 'presupuesto_excedido',\n  mensaje: \\`Has excedido tu presupuesto de \\${presupuesto.categoria}\\`,\n  severidad: 'alta',\n  fecha: hoy,\n  usuario_id: presupuesto.usuario_id\n}));\n\nreturn alertas.length > 0 ? [{ json: { alertas } }] : [{ \n  json: { \n    alertas: [{ \n      tipo: 'sin_alertas', \n      mensaje: 'Todo está bajo control financieramente', \n      severidad: 'baja', \n      fecha: hoy \n    }] \n  } \n}];\n` }}"
+      },
+      "id": "7fce68d5-0529-4800-9750-0433949cbba0",
+      "name": "Generar Alertas",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        848,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "lsilvasu@unitru.edu.pe",
+        "subject": "={{ `Alertas Financieras - ${new Date().toLocaleDateString()}` }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1056,
+        320
+      ],
+      "id": "913aee1b-514b-461d-ab94-57e03861a80d",
+      "name": "Enviar Alertas por Email",
+      "webhookId": "e325e0b8-180d-4583-8143-56729b70e5f6"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Plaid Transacciones": {
+      "main": [
+        [
+          {
+            "node": "Procesar Transacciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procesar Transacciones": {
+      "main": [
+        [
+          {
+            "node": "Supabase Transacciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Análisis": {
+      "main": [
+        [
+          {
+            "node": "Supabase Análisis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron Diario": {
+      "main": [
+        [
+          {
+            "node": "Supabase Presupuestos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Presupuestos": {
+      "main": [
+        [
+          {
+            "node": "Generar Alertas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar Alertas": {
+      "main": [
+        [
+          {
+            "node": "Enviar Alertas por Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Transacciones": {
+      "main": [
+        [
+          {
+            "node": "Plaid Transacciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+}
+}

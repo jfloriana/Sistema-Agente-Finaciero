@@ -1,0 +1,238 @@
+{
+  "name": "Sistema Asesor Financiero Personal IA",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "webhook-transacciones",
+        "responseMode": "onReceived"
+      },
+      "id": "webhook-transacciones",
+      "name": "Webhook Transacciones",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "resource": "transaction",
+        "operation": "get",
+        "endpoint": "transactions/get",
+        "clientId": "={{$credentials.plaidClientId}}",
+        "secret": "={{$credentials.plaidSecret}}",
+        "accessToken": "={{$node[\"Supabase Usuarios\"].json[\"access_token\"]}}",
+        "startDate": "={{$now.format('YYYY-MM-DD')}}",
+        "endDate": "={{$now.format('YYYY-MM-DD')}}"
+      },
+      "id": "plaid-transacciones",
+      "name": "Plaid Transacciones",
+      "type": "n8n-nodes-base.plaid",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "transacciones",
+        "data": "={{$node[\"Procesar Transacciones\"].json}}",
+        "returnFields": "*"
+      },
+      "id": "supabase-transacciones",
+      "name": "Supabase Transacciones",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "={{ `\nconst { transacciones } = $input.first().json;\n\n// Categorizar y analizar transacciones\nconst transaccionesProcesadas = transacciones.map(trans => ({\n  id: trans.transaction_id,\n  usuario_id: trans.account_id,\n  monto: trans.amount,\n  categoria: trans.category ? trans.category[0] : 'Otros',\n  descripcion: trans.name,\n  fecha: trans.date,\n  cuenta: trans.account_id,\n  tipo: trans.amount > 0 ? 'ingreso' : 'gasto',\n  metadata: {\n    ubicacion: trans.location,\n    merchant: trans.merchant_name\n  }\n}));\n\nreturn transaccionesProcesadas;\n` }}"
+      },
+      "id": "procesar-transacciones",
+      "name": "Procesar Transacciones",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4",
+        "messages": [
+          {
+            "role": "system",
+            "content": "Eres un asesor financiero experto. Analiza los patrones de gastos y proporciona recomendaciones personalizadas."
+          },
+          {
+            "role": "user",
+            "content": "Analiza estas transacciones: {{$node[\"Procesar Transacciones\"].json}} y proporciona:\n1. Análisis de patrones de gasto\n2. Recomendaciones de ahorro\n3. Alertas de posibles problemas\n4. Sugerencias de optimización"
+          }
+        ],
+        "options": {}
+      },
+      "id": "openai-analisis",
+      "name": "OpenAI Análisis",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "analisis_financiero",
+        "data": "={{{\n  usuario_id: $node[\"Procesar Transacciones\"].json[0].usuario_id,\n  fecha_analisis: new Date().toISOString(),\n  analisis: $node[\"OpenAI Análisis\"].json.choices[0].message.content,\n  transacciones_analizadas: $node[\"Procesar Transacciones\"].json.length\n}}}",
+        "returnFields": "*"
+      },
+      "id": "supabase-analisis",
+      "name": "Supabase Análisis",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "rules": [
+          {
+            "condition": {
+              "type": "dateTime",
+              "conditions": {
+                "dateTime": {
+                  "greaterEqual": "={{ DateTime.now().toFormat('yyyy-MM-dd') }}T00:00:00.000Z",
+                  "lessEqual": "={{ DateTime.now().toFormat('yyyy-MM-dd') }}T23:59:59.999Z"
+                }
+              }
+            },
+            "options": {}
+          }
+        ],
+        "options": {
+          "timezone": "America/New_York"
+        }
+      },
+      "id": "cron-diario",
+      "name": "Cron Diario",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [240, 500]
+    },
+    {
+      "parameters": {
+        "operation": "query",
+        "query": "SELECT * FROM presupuestos WHERE usuario_id = 'usuario_ejemplo'"
+      },
+      "id": "supabase-presupuestos",
+      "name": "Supabase Presupuestos",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [460, 500]
+    },
+    {
+      "parameters": {
+        "functionCode": "={{ `\nconst { presupuestos } = $input.first().json;\nconst hoy = new Date().toISOString().split('T')[0];\n\n// Simular verificación de alertas\nconst alertas = [\n  {\n    tipo: 'presupuesto_excedido',\n    mensaje: 'Has excedido tu presupuesto de alimentación',\n    severidad: 'alta',\n    fecha: hoy\n  }\n];\n\nreturn alertas;\n` }}"
+      },
+      "id": "generar-alertas",
+      "name": "Generar Alertas",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [680, 500]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "message",
+        "operation": "create",
+        "to": "={{$node[\"Supabase Usuarios\"].json[\"email\"]}}",
+        "subject": "Alerta Financiera",
+        "body": "={{$node[\"Generar Alertas\"].json[0].mensaje}}"
+      },
+      "id": "enviar-email",
+      "name": "Enviar Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [900, 500]
+    }
+  ],
+  "connections": {
+    "Webhook Transacciones": {
+      "main": [
+        [
+          {
+            "node": "Plaid Transacciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plaid Transacciones": {
+      "main": [
+        [
+          {
+            "node": "Procesar Transacciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procesar Transacciones": {
+      "main": [
+        [
+          {
+            "node": "Supabase Transacciones",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "OpenAI Análisis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Análisis": {
+      "main": [
+        [
+          {
+            "node": "Supabase Análisis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron Diario": {
+      "main": [
+        [
+          {
+            "node": "Supabase Presupuestos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Presupuestos": {
+      "main": [
+        [
+          {
+            "node": "Generar Alertas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar Alertas": {
+      "main": [
+        [
+          {
+            "node": "Enviar Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

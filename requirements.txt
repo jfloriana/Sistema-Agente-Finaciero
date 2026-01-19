@@ -1,0 +1,12 @@
+streamlit==1.28.0
+pandas==2.0.3
+numpy==1.24.3
+plotly==5.15.0
+matplotlib==3.7.1
+seaborn==0.12.2
+supabase==2.3.1
+fpdf2==2.7.4
+requests==2.31.0
+python-dotenv==1.0.0
+openpyxl==3.1.2
+xlsxwriter==3.1.2

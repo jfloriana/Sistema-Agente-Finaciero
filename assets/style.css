@@ -1,0 +1,41 @@
+.main-header {
+    font-size: 2.5rem;
+    color: #1f77b4;
+    text-align: center;
+    margin-bottom: 2rem;
+    font-weight: bold;
+}
+
+.metric-card {
+    background-color: #f0f2f6;
+    padding: 1rem;
+    border-radius: 10px;
+    border-left: 4px solid #1f77b4;
+    margin-bottom: 1rem;
+}
+
+.premium-feature {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+}
+
+.success-alert {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1rem;
+}
+
+.warning-alert {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1rem;
+}
