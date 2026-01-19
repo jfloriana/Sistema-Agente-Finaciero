@@ -38,6 +38,7 @@ Sistema de automatización financiera inteligente que combina análisis predicti
 - **Conexión:** Red redundante, servidor 24/7
 
 ## 📁 Estructura del Proyecto
+
 agente-financiero/
 ├── pycache/ # Caché de Python
 ├── assets/ # Recursos gráficos (iconos, logos)
