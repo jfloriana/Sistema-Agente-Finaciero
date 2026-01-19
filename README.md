@@ -1,2 +1,3 @@
 # Sistema-Agente-Finaciero
-Agente financiero IA
+descripcion corta nada mas
+Sistema financiero automatizado desarrollado en Python con orquestación n8n. Analiza datos, ejecuta decisiones autónomas y gestiona operaciones financieras mediante flujos de trabajo inteligentes.
