@@ -3,17 +3,11 @@ Sistema de automatización financiera inteligente que combina análisis predicti
 
 🧠 Tecnologías utilizadas
 Python – Lógica de negocio y análisis de datos
-
 n8n – Orquestación de flujos de trabajo automatizados
-
 Pandas & NumPy – Procesamiento de datos financieros
-
 scikit-learn – Modelos predictivos y análisis ML
-
 Requests & APIs REST – Conexión con servicios financieros
-
 SQLite/PostgreSQL – Almacenamiento de datos y transacciones
-
 Streamlit (opcional) – Dashboard de monitoreo
 
 🖥️ Requisitos del sistema (entorno de desarrollo)
